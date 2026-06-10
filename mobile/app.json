@@ -9,9 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.ecut.aibill",
+      "supportsTablet": true,
+      "buildNumber": "1"
     },
     "android": {
+      "package": "com.ecut.aibill",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#FFE4EC",
         "foregroundImage": "./assets/images/kitty.png"
@@ -29,7 +33,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you upload a profile picture."
+          "photosPermission": "小x智能记账需要访问相册，以便你上传个人头像。"
         }
       ],
       [
