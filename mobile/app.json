@@ -21,7 +21,10 @@
         "foregroundImage": "./assets/images/kitty.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -47,11 +50,19 @@
             "backgroundColor": "#2A2226"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ab557427-d310-4ea8-981f-32cccbd2ec68"
+      }
+    },
+    "owner": "prettydoll"
   }
 }
