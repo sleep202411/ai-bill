@@ -16,6 +16,7 @@
     "submit:android": "eas submit --platform android --profile production"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.203",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
@@ -23,6 +24,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "@supabase/supabase-js": "^2.108.1",
+    "ai": "^6.0.201",
     "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.34",
     "expo-auth-session": "~7.0.11",
@@ -50,6 +52,7 @@
     "react-native-svg": "15.12.1",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
