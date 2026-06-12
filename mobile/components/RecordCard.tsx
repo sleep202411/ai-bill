@@ -9,6 +9,9 @@ type Record = {
 }
 
 const RecordCard = ({ record }: { record: Record }) => {
+  const displayAmount = (Math.abs(record.amount) / 100).toFixed(2);
+  const prefix = record.amount > 0 ? '+' : '-';
+
   return (
     <View className='bg-white rounded-xl p-4 mt-3 shadow-sm'>
       <View className='flex-row justify-between items-center'>
@@ -16,7 +19,7 @@ const RecordCard = ({ record }: { record: Record }) => {
             {record.title}
         </Text>
         <Text className={`text-xl font-semibold ${record.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {record.amount}
+            {prefix}{displayAmount}
         </Text>
       </View>
     </View>

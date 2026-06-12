@@ -1,21 +1,19 @@
-import { Router, type Request, type Response } from 'express';
+import { Router } from 'express';
+
+import { getRecords } from '../services/recordService';
 
 const router = Router();
 
-router.get('/', (_req: Request, res: Response) => {
-  res.json([]);
-});
+router.post('/', async (req, res) => {
+  const { user_id, date } = req.body; // date format: YYYY-MM-DD
 
-router.post('/', (req: Request, res: Response) => {
-  const { user_id, title, amount } = req.body;
-
-  res.status(201).json({
-    id: Date.now(),
-    user_id,
-    title,
-    amount,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    const records = await getRecords(user_id, date);
+    res.status(200).json(records);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 export default router;

@@ -27,7 +27,7 @@ function toRecordResponse(record: RecordRow) {
   };
 }
 
-export async function listRecords(userId: string, date?: string) {
+export async function getRecords(userId: string, date?: string) {
   const conditions = [eq(records.userId, userId)];
 
   if (date) {
@@ -44,11 +44,6 @@ export async function listRecords(userId: string, date?: string) {
     .orderBy(desc(records.createdAt));
 
   return result.map(toRecordResponse);
-}
-
-export async function getRecordById(id: number) {
-  const [record] = await db.select().from(records).where(eq(records.id, id)).limit(1);
-  return record ? toRecordResponse(record) : null;
 }
 
 export async function createRecord(input: CreateRecordInput) {
@@ -76,7 +71,7 @@ export async function updateRecord(id: number, input: UpdateRecordInput) {
   }
 
   if (Object.keys(updates).length === 0) {
-    return getRecordById(id);
+    return null;
   }
 
   const [record] = await db

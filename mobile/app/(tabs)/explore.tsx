@@ -1,16 +1,40 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
-import { useState } from 'react';
-import { View, TextInput, ScrollView, Text } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ChatInputBar } from '@/components/chat/ChatInputBar';
+import { ChatMessageBubble } from '@/components/chat/ChatMessageBubble';
+import { LoginMascot } from '@/components/icons/login-mascot';
+import { ScreenBackground } from '@/components/ui/screen-background';
+import { getMessageText, parseChatMessage } from '@/utils/chat-message';
+import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/stores/auth-store';
+import { useRecentPromptStore } from '@/stores/recent-prompt-store';
+import { useRecordStore } from '@/stores/record-store';
 
-export default function App() {
-  const user = useAuthStore(state => state.user);
+const defaultQuickPrompts = ['午饭 35 元', '奶茶 18 元', '地铁 6 元'];
+
+export default function ChatScreen() {
+  const user = useAuthStore((state) => state.user);
+  const fetchRecords = useRecordStore((state) => state.fetchRecords);
+  const recentPrompts = useRecentPromptStore((state) => state.prompts);
+  const loadRecentPrompts = useRecentPromptStore((state) => state.load);
+  const addRecentPrompt = useRecentPromptStore((state) => state.add);
+  const resetRecentPrompts = useRecentPromptStore((state) => state.reset);
+  const quickPrompts = recentPrompts.length > 0 ? recentPrompts : defaultQuickPrompts;
+  const scrollRef = useRef<ScrollView>(null);
   const [input, setInput] = useState('');
-  const { messages, error, sendMessage } = useChat({
+
+  const refreshRecords = useCallback(() => {
+    if (user?.id) {
+      fetchRecords(new Date(), user.id);
+    }
+  }, [fetchRecords, user?.id]);
+
+  const { messages, error, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       fetch: expoFetch as unknown as typeof globalThis.fetch,
       api: `${process.env.EXPO_PUBLIC_OPENAI_API_URL}/chat`,
@@ -18,54 +42,140 @@ export default function App() {
         user_id: user?.id,
       },
     }),
-    onError: (error: unknown) => console.error(error, 'ERROR'),
+    onError: (err: unknown) => console.error(err, 'ERROR'),
+    onFinish: ({ message }) => {
+      const content = getMessageText(message.parts);
+      const { record } = parseChatMessage(content);
+      if (record) {
+        refreshRecords();
+      }
+    },
     messages: [
       {
-        id: '1',
+        id: 'welcome',
         role: 'assistant',
-        parts: [{ 
-          type: 'text', 
-          text: '您好，请问需要记录什么消费?' 
-        }],
+        parts: [
+          {
+            type: 'text',
+            text: '你好呀～我是小x，告诉我今天花了什么，我来帮你记账～',
+          },
+        ],
       },
     ],
   });
 
-  if (error) return <Text>{error.message}</Text>;
+  const isStreaming = status === 'streaming' || status === 'submitted';
+
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [messages, status]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadRecentPrompts(user.id);
+      return;
+    }
+    resetRecentPrompts();
+  }, [user?.id, loadRecentPrompts, resetRecentPrompts]);
+
+  const handleSend = (text?: string) => {
+    const message = (text ?? input).trim();
+    if (!message || isStreaming) {
+      return;
+    }
+
+    if (user?.id) {
+      addRecentPrompt(user.id, message);
+    }
+    sendMessage({ text: message });
+    setInput('');
+  };
+
+  if (error) {
+    return (
+      <ScreenBackground>
+        <SafeAreaView className="flex-1 items-center justify-center px-6">
+          <Text className="text-center text-text-primary">{error.message}</Text>
+        </SafeAreaView>
+      </ScreenBackground>
+    );
+  }
 
   return (
-    <SafeAreaView className="flex-1 px-2" edges={['top', 'left', 'right']}>
-      <View className="flex-1">
-        <ScrollView className="flex-1" contentContainerClassName="pb-2">
-          {messages.map(m => (
-            <View key={m.id} className="my-2">
-              <View>
-                <Text className="font-bold">{m.role}</Text>
-                {m.parts.map((part: any, i: number) => {
-                  switch (part.type) {
-                    case 'text':
-                      return <Text key={`${m.id}-${i}`}>{part.text}</Text>;
-                  }
-                })}
-              </View>
-            </View>
-          ))}
+    <ScreenBackground>
+      <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
+        <View
+          className="flex-row items-center gap-3 border-b px-4 py-3"
+          style={{ borderColor: colors.divider, backgroundColor: 'rgba(255,255,255,0.72)' }}
+        >
+          <View
+            className="h-10 w-10 items-center justify-center overflow-hidden rounded-full"
+            style={{ backgroundColor: colors.primaryLight }}
+          >
+            <LoginMascot size={34} />
+          </View>
+          <View>
+            <Text className="text-base font-semibold text-text-primary">小x</Text>
+            <Text className="text-xs text-text-secondary">
+              {isStreaming ? '正在回复...' : '你的专属记账助手'}
+            </Text>
+          </View>
+        </View>
+
+        <ScrollView
+          ref={scrollRef}
+          className="flex-1 px-4"
+          contentContainerClassName="py-4"
+          keyboardShouldPersistTaps="handled"
+        >
+          {messages.map((message, index) => {
+            const isLastAssistant =
+              message.role === 'assistant' && index === messages.length - 1;
+
+            return (
+              <ChatMessageBubble
+                key={message.id}
+                role={message.role}
+                parts={message.parts}
+                isStreaming={isLastAssistant && isStreaming}
+              />
+            );
+          })}
         </ScrollView>
 
-        <View className="pb-2">
-          <TextInput
-            className="rounded-lg bg-white p-2"
-            placeholder="Say something..."
+        <View className="px-4 pb-3 pt-2">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="gap-2 pb-3"
+          >
+            {quickPrompts.map((prompt) => (
+              <Pressable
+                key={prompt}
+                onPress={() => handleSend(prompt)}
+                disabled={isStreaming}
+                className="rounded-pill px-4 py-2"
+                style={{
+                  backgroundColor: colors.white,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  opacity: isStreaming ? 0.5 : 1,
+                }}
+              >
+                <Text className="text-sm text-text-primary">{prompt}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <ChatInputBar
             value={input}
-            onChange={e => setInput(e.nativeEvent.text)}
-            onSubmitEditing={e => {
-              e.preventDefault();
-              sendMessage({ text: input });
-              setInput('');
-            }}
+            onChange={setInput}
+            onSend={() => handleSend()}
+            disabled={isStreaming}
+            placeholder="例如：咖啡 20 元"
           />
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScreenBackground>
   );
 }
